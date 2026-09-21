@@ -21,9 +21,11 @@ opencode-project/
 ```
 
 ## Menjalankan
-> 1. Jalankan PostgreSQL (lihat `docker-compose.yml` atau instalasi lokal)
+> 1. PostgreSQL lokal (sudah terinstall via winget): user `postgres`, password `postgres`, database `flashcard` dibuat
 > 2. Konfigurasi `backend/.env` (contoh di `backend/.env.example`)
-> 3. `cd backend && go run cmd/main.go` → http://localhost:8080
+> 3. `cd backend && go run ./cmd` → http://localhost:8080
 > 4. `cd frontend && npm run dev` → http://localhost:3000
 
-Status: **Fase 1 dalam pengerjaan** — setup monorepo, model GORM, CRUD mahasiswa, upload foto, import CSV.
+Status: **Fase 1 selesai** ✅ — monorepo, model GORM (AutoMigrate), CRUD mahasiswa, upload foto, import CSV (all-or-nothing). Terverifikasi end-to-end terhadap PostgreSQL.
+
+Catatan: folder `frontend/.npmrc` berisi `allow-scripts=**` untuk mengizinkan script instalasi npm (mengikuti kebijakan `allow-scripts` global di `~/.npmrc`).
