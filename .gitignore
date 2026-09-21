@@ -1,0 +1,24 @@
+# Node
+node_modules/
+
+# Go
+backend/uploads/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Next.js
+frontend/.next/
+frontend/out/
