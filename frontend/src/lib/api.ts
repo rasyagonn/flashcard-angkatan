@@ -109,3 +109,60 @@ export async function importStudents(file: File): Promise<{
   form.append("file", file);
   return request("/students/import", { method: "POST", body: form });
 }
+
+// ── Permainan (Fase 2) ─────────────────────────────────
+
+export interface PlayOption {
+  id: number;
+  name: string;
+}
+
+export interface PlayRound {
+  /** Answer correct = pilih opsi dengan id === card_id */
+  card_id: number;
+  photo_url: string;
+  options: PlayOption[];
+  finished?: boolean;
+}
+
+export interface PlayAnswerResult {
+  correct: boolean;
+  points_delta: number;
+  current_points: number;
+  correct_name: string;
+}
+
+export interface PlayEndResult {
+  session_id: number;
+  points_earned: number;
+  accuracy?: number;
+}
+
+/** Ambil kartu acak + 4 opsi; exclude = id kartu yang sudah dimainkan di sesi ini. */
+export async function getRound(exclude: number[]): Promise<PlayRound> {
+  const qs = exclude.length > 0 ? `?exclude=${exclude.join(",")}` : "";
+  return request(`/play/round${qs}`);
+}
+
+/** Kirim jawaban; benar +2, salah -1 (min 0). */
+export async function submitAnswer(
+  card_id: number,
+  option_id: number
+): Promise<PlayAnswerResult> {
+  return request("/play/answer", {
+    method: "POST",
+    body: JSON.stringify({ card_id, option_id }),
+  });
+}
+
+/** Akhiri sesi dan simpan statistik ke play_sessions. */
+export async function endSession(payload: {
+  total_cards: number;
+  correct_count: number;
+  wrong_count: number;
+}): Promise<PlayEndResult> {
+  return request("/play/end", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

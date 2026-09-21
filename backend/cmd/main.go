@@ -40,6 +40,7 @@ func main() {
 	r.Static("/uploads", uploadDir)
 
 	studentHandler := handlers.NewStudentHandler(db)
+	playHandler := handlers.NewPlayHandler(db)
 
 	api := r.Group("/api/v1")
 	{
@@ -55,6 +56,11 @@ func main() {
 		api.PUT("/students/:id", studentHandler.UpdateStudent)
 		api.DELETE("/students/:id", studentHandler.DeleteStudent)
 		api.POST("/students/import", studentHandler.ImportStudents)
+
+		// Fase 2: permainan flashcard
+		api.GET("/play/round", playHandler.Round)
+		api.POST("/play/answer", playHandler.Answer)
+		api.POST("/play/end", playHandler.End)
 	}
 
 	log.Printf("FlashCard backend berjalan di http://localhost:%s", port)
