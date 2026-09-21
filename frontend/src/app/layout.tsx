@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Inter } from "next/font/google";
+import Nav from "@/components/Nav";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const display = Bricolage_Grotesque({
+  variable: "--font-fc-display",
   subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sans = Inter({
+  variable: "--font-fc-sans",
   subsets: ["latin"],
 });
 
@@ -21,13 +23,13 @@ export const metadata: Metadata = {
     "Aplikasi flashcard untuk mengingat nama mahasiswa satu angkatan.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="id" className={`${display.variable} ${sans.variable}`}>
+      <body className="flex min-h-screen flex-col">
+        <Nav />
+        <div className="flex flex-1 flex-col">{children}</div>
+      </body>
     </html>
   );
 }

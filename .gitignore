@@ -3,6 +3,7 @@ node_modules/
 
 # Go
 backend/uploads/
+*.exe
 
 # Environment
 .env

@@ -181,20 +181,33 @@ func (h *PlayHandler) Answer(c *gin.Context) {
 	})
 }
 
-// End mencatat riwayat satu sesi permainan ke play_sessions.
+// sessionAnswerInput adalah satu record jawaban yang dikirim klien saat sesi
+// berakhir, untuk dijadikan bahan evaluasi.
+type sessionAnswerInput struct {
+	StudentID   uint   `json:"student_id"`
+	StudentName string `json:"student_name"`
+	PhotoPath   string `json:"photo_path"`
+	ChosenName  string `json:"chosen_name"`
+	Correct     bool   `json:"correct"`
+	PointsDelta int    `json:"points_delta"`
+}
+
+// End mencatat riwayat satu sesi permainan ke play_sessions, plus detail
+// jawaban per kartu ke session_answers (opsional, untuk evaluasi).
 // @Summary Akhiri sesi & catat statistik
 // @Tags play
 // @Accept json
 // @Produce json
-// @Param payload body object true "Hasil sesi" SchemaExample({"total_cards":7,"correct_count":4,"wrong_count":3})
+// @Param payload body object true "Hasil sesi (+ optional answers[] detail jawaban)" SchemaExample({"total_cards":7,"correct_count":4,"wrong_count":3,"answers":[{"student_id":1,"student_name":"Andi","photo_path":"/uploads/a.png","chosen_name":"Andi","correct":true,"points_delta":2}]})
 // @Success 200 {object} map[string]interface{} "session_id, points_earned, accuracy"
 // @Failure 400 {object} map[string]interface{} "Payload tidak valid / tidak konsisten"
 // @Router /play/end [post]
 func (h *PlayHandler) End(c *gin.Context) {
 	var input struct {
-		TotalCards   int `json:"total_cards" binding:"required"`
-		CorrectCount int `json:"correct_count" binding:"required"`
-		WrongCount   int `json:"wrong_count" binding:"required"`
+		TotalCards   int                  `json:"total_cards"`
+		CorrectCount int                  `json:"correct_count"`
+		WrongCount   int                  `json:"wrong_count"`
+		Answers      []sessionAnswerInput `json:"answers"`
 	}
 	if err := c.ShouldBindJSON(&input); err != nil {
 		helpers.Error(c, http.StatusBadRequest, "payload tidak valid: "+err.Error())
@@ -223,6 +236,33 @@ func (h *PlayHandler) End(c *gin.Context) {
 	if err := h.DB.Create(&session).Error; err != nil {
 		helpers.Error(c, http.StatusInternalServerError, "gagal menyimpan riwayat sesi")
 		return
+	}
+
+	// simpan detail tiap jawaban (opsional) untuk evaluasi setelah main
+	if len(input.Answers) > 0 {
+		now := time.Now()
+		rows := make([]models.SessionAnswer, 0, len(input.Answers))
+		for _, a := range input.Answers {
+			if a.StudentID == 0 {
+				continue
+			}
+			rows = append(rows, models.SessionAnswer{
+				SessionID:   session.ID,
+				StudentID:   a.StudentID,
+				StudentName: a.StudentName,
+				PhotoPath:   a.PhotoPath,
+				ChosenName:  a.ChosenName,
+				Correct:     a.Correct,
+				PointsDelta: a.PointsDelta,
+				AnsweredAt:  now,
+			})
+		}
+		if len(rows) > 0 {
+			if err := h.DB.Create(&rows).Error; err != nil {
+				helpers.Error(c, http.StatusInternalServerError, "gagal menyimpan detail jawaban")
+				return
+			}
+		}
 	}
 
 	helpers.Success(c, http.StatusOK, gin.H{

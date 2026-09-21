@@ -48,3 +48,17 @@ type ClaimedReward struct {
 	PointsAtClaim int       `json:"points_at_claim" gorm:"not null"`
 	ClaimedAt     time.Time `json:"claimed_at"`
 }
+
+// SessionAnswer merekam satu jawaban dalam sesi permainan (untuk evaluasi
+// setelah game selesai: kelihatan kartu mana yang salah dan jawaban yang benar).
+type SessionAnswer struct {
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	SessionID   uint      `json:"session_id" gorm:"not null;index"`
+	StudentID   uint      `json:"student_id" gorm:"not null"`
+	StudentName string    `json:"student_name" gorm:"not null"`
+	PhotoPath   string    `json:"photo_path"`
+	ChosenName  string    `json:"chosen_name" gorm:"not null"`
+	Correct     bool      `json:"correct" gorm:"not null"`
+	PointsDelta int       `json:"points_delta" gorm:"not null;default:0"`
+	AnsweredAt  time.Time `json:"answered_at"`
+}

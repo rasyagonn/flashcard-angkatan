@@ -138,6 +138,16 @@ export interface PlayEndResult {
   accuracy?: number;
 }
 
+/** Satu jawaban dalam sesi yang dikirim klien saat sesi berakhir (bahan evaluasi). */
+export interface PlayAnswerRecord {
+  student_id: number;
+  student_name: string;
+  photo_path: string;
+  chosen_name: string;
+  correct: boolean;
+  points_delta: number;
+}
+
 /** Ambil kartu acak + 4 opsi; exclude = id kartu yang sudah dimainkan di sesi ini. */
 export async function getRound(exclude: number[]): Promise<PlayRound> {
   const qs = exclude.length > 0 ? `?exclude=${exclude.join(",")}` : "";
@@ -155,11 +165,12 @@ export async function submitAnswer(
   });
 }
 
-/** Akhiri sesi dan simpan statistik ke play_sessions. */
+/** Akhiri sesi dan simpan statistik ke play_sessions (plus detail jawaban). */
 export async function endSession(payload: {
   total_cards: number;
   correct_count: number;
   wrong_count: number;
+  answers?: PlayAnswerRecord[];
 }): Promise<PlayEndResult> {
   return request("/play/end", {
     method: "POST",
@@ -252,4 +263,21 @@ export async function claimReward(id: number): Promise<{
 
 export async function listSessions(): Promise<PlaySessionItem[]> {
   return request("/sessions");
+}
+
+export interface SessionAnswer {
+  id: number;
+  session_id: number;
+  student_id: number;
+  student_name: string;
+  photo_path: string;
+  chosen_name: string;
+  correct: boolean;
+  points_delta: number;
+  answered_at: string;
+}
+
+/** Detail jawaban satu sesi (untuk evaluasi di riwayat). */
+export async function listSessionAnswers(sessionId: number): Promise<SessionAnswer[]> {
+  return request(`/sessions/${sessionId}/answers`);
 }

@@ -1,26 +1,140 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #faf3e3;
+  --card: #fffdf6;
+  --ink: #26223e;
+  --ink-soft: #57526f;
+  --coral: #ff6b5e;
+  --coral-deep: #e14b3e;
+  --sun: #ffc857;
+  --sun-deep: #e8a93b;
+  --teal: #2ec4b6;
+  --teal-deep: #1e9e92;
+  --berry: #e5446d;
+  --blue: #5c6bf2;
+  --good: #2f9e63;
+  --bad: #e14b3e;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-coral: var(--coral);
+  --color-coral-deep: var(--coral-deep);
+  --color-sun: var(--sun);
+  --color-sun-deep: var(--sun-deep);
+  --color-teal: var(--teal);
+  --color-teal-deep: var(--teal-deep);
+  --color-berry: var(--berry);
+  --color-blue: var(--blue);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --font-display: var(
+    --font-fc-display,
+    "Bricolage Grotesque",
+    ui-sans-serif,
+    system-ui,
+    sans-serif
+  );
+  --font-sans: var(--font-fc-sans, "Inter", ui-sans-serif, system-ui, sans-serif);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background-color: var(--paper);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--ink) 9%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  color: var(--ink);
+  font-family: var(--font-sans);
 }
+
+::selection {
+  background: var(--sun);
+  color: var(--ink);
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-ink bg-ink px-5 py-2.5 font-display text-base font-bold text-paper transition-all duration-100 select-none disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-ink {
+    @apply bg-ink text-paper shadow-[3px_3px_0_0_var(--ink)] hover:-translate-y-0.5 hover:shadow-[4px_4px_0_0_var(--ink)] active:translate-y-0.5 active:shadow-none;
+  }
+  .btn-coral {
+    @apply bg-coral text-paper shadow-[3px_3px_0_0_var(--ink)] hover:-translate-y-0.5 hover:bg-coral-deep hover:shadow-[4px_4px_0_0_var(--ink)] active:translate-y-0.5 active:shadow-none;
+  }
+  .btn-teal {
+    @apply bg-teal text-ink shadow-[3px_3px_0_0_var(--ink)] hover:-translate-y-0.5 hover:bg-teal-deep hover:shadow-[4px_4px_0_0_var(--ink)] active:translate-y-0.5 active:shadow-none;
+  }
+  .btn-sun {
+    @apply bg-sun text-ink shadow-[3px_3px_0_0_var(--ink)] hover:-translate-y-0.5 hover:bg-sun-deep hover:shadow-[4px_4px_0_0_var(--ink)] active:translate-y-0.5 active:shadow-none;
+  }
+  .btn-ghost {
+    @apply bg-card text-ink shadow-[3px_3px_0_0_var(--ink)] hover:-translate-y-0.5 hover:bg-paper hover:shadow-[4px_4px_0_0_var(--ink)] active:translate-y-0.5 active:shadow-none;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .card {
+    @apply rounded-2xl border-2 border-ink bg-card shadow-[4px_4px_0_0_var(--ink)];
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-lg px-2.5 py-1 font-display text-[11px] font-extrabold tracking-widest uppercase select-none;
+  }
+
+  .input {
+    @apply w-full rounded-xl border-2 border-ink/25 bg-card px-4 py-2.5 font-medium text-ink placeholder:text-ink/35 focus:border-ink focus:ring-4 focus:ring-sun/50 focus:outline-none;
+  }
+
+  .label {
+    @apply font-display text-xs font-extrabold tracking-widest text-ink-soft uppercase;
+  }
+
+  .section-title {
+    @apply font-display text-2xl font-extrabold tracking-tight;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(5px);
+  }
+}
+.animate-shake {
+  animation: shake 0.4s ease;
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.88);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-pop {
+  animation: pop 0.22s ease;
+}
+

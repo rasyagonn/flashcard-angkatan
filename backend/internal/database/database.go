@@ -33,6 +33,7 @@ func Connect() *gorm.DB {
 		&models.UserProgress{},
 		&models.PlaySession{},
 		&models.ClaimedReward{},
+		&models.SessionAnswer{},
 	); err != nil {
 		log.Fatalf("gagal menjalankan migrasi: %v", err)
 	}

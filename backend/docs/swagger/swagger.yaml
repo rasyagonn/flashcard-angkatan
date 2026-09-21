@@ -45,7 +45,7 @@ paths:
       consumes:
       - application/json
       parameters:
-      - description: Hasil sesi
+      - description: Hasil sesi (+ optional answers[] detail jawaban)
         in: body
         name: payload
         required: true
@@ -249,6 +249,36 @@ paths:
             additionalProperties: true
             type: object
       summary: Riwayat sesi permainan
+      tags:
+      - rank
+  /sessions/{id}/answers:
+    get:
+      parameters:
+      - description: ID sesi
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Daftar session_answers (student_name, photo_path, chosen_name,
+            correct, points_delta)
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: ID sesi tidak valid
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Sesi tidak ditemukan
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Detail jawaban satu sesi
       tags:
       - rank
   /students:

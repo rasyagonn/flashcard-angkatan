@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import {
   createStudent,
   deleteStudent,
@@ -12,6 +11,13 @@ import {
   updateStudent,
   uploadPhoto,
 } from "@/lib/api";
+import {
+  IconClose,
+  IconPencil,
+  IconSearch,
+  IconTrash,
+  IconUpload,
+} from "@/components/icons";
 
 const LIMIT = 10;
 
@@ -131,24 +137,26 @@ export default function AddPage() {
   }
 
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
+  const avatarColors = ["bg-sun", "bg-coral", "bg-teal", "bg-blue", "bg-berry"];
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link href="/" className="text-sm text-zinc-400 hover:underline">
-            ← Beranda
-          </Link>
-          <h1 className="mt-1 text-2xl font-bold">Add — Kelola Mahasiswa</h1>
-        </div>
-      </div>
+    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
+      <header>
+        <span className="chip bg-sun text-ink">Daftar mahasiswa</span>
+        <h1 className="mt-3 font-display text-4xl font-extrabold tracking-tight">
+          Kelola <span className="text-coral-deep">Mahasiswa</span>
+        </h1>
+        <p className="mt-2 max-w-xl text-ink-soft">
+          Tambah satu-satu dengan foto, atau import langsung dari file CSV.
+        </p>
+      </header>
 
       {msg && (
         <div
-          className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+          className={`animate-pop mt-6 rounded-xl border-2 px-4 py-3 text-sm font-medium ${
             msg.kind === "ok"
-              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-              : "border-red-300 bg-red-50 text-red-800"
+              ? "border-good/50 bg-good/10 text-good"
+              : "border-bad/50 bg-bad/10 text-bad"
           }`}
         >
           {msg.text}
@@ -156,188 +164,201 @@ export default function AddPage() {
       )}
 
       {/* Form tambah/edit */}
-      <form
-        onSubmit={handleSubmit}
-        className="mb-8 grid gap-4 rounded-2xl border border-zinc-200 p-6 dark:border-zinc-800"
-      >
-        <h2 className="font-semibold">
-          {editingId !== null ? `Edit Mahasiswa #${editingId}` : "Tambah Mahasiswa"}
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <label className="flex flex-col gap-1 text-sm">
-            NRP
-            <input
-              required
-              value={nrp}
-              onChange={(e) => setNrp(e.target.value)}
-              placeholder="5025201001"
-              className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Nama
-            <input
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Andi Pratama"
-              className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Foto URL
-            <input
-              value={photoPath}
-              onChange={(e) => setPhotoPath(e.target.value)}
-              placeholder="/uploads/x.jpg atau https://..."
-              className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700"
-            />
-          </label>
-        </div>
-
-        <div className="flex items-center gap-3 text-sm">
-          <label className="rounded-lg border border-dashed border-zinc-300 px-3 py-2 text-zinc-500 hover:border-zinc-500">
-            ⬆ Upload foto…
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.webp"
-              disabled={busy}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleUpload(f);
-              }}
-              className="hidden"
-            />
-          </label>
+      <section className="card mt-8 p-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="section-title">
+            {editingId !== null ? "Edit Mahasiswa" : "Tambah Mahasiswa"}
+          </h2>
           {editingId !== null && (
-            <button
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setNrp("");
-                setName("");
-                setPhotoPath("");
-              }}
-              className="text-zinc-500 underline hover:text-zinc-800"
-            >
-              Batal edit
-            </button>
+            <span className="chip bg-coral text-paper">Mengedit #{editingId}</span>
           )}
         </div>
 
-        <button
-          disabled={busy}
-          className="rounded-lg bg-zinc-900 px-5 py-2 text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-black"
-        >
-          {editingId !== null ? "Simpan Perubahan" : "Tambahkan"}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="mt-5">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="label">NRP</span>
+              <input
+                required
+                value={nrp}
+                onChange={(e) => setNrp(e.target.value)}
+                placeholder="5025201001"
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="label">Nama</span>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Andi Pratama"
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="label">Foto URL</span>
+              <input
+                value={photoPath}
+                onChange={(e) => setPhotoPath(e.target.value)}
+                placeholder="/uploads/x.jpg atau https://..."
+                className="input"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <label className="btn btn-ghost btn-sm cursor-pointer">
+              <IconUpload className="h-4 w-4" /> Upload foto…
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp"
+                disabled={busy}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleUpload(f);
+                }}
+                className="hidden"
+              />
+            </label>
+            {editingId !== null && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setNrp("");
+                  setName("");
+                  setPhotoPath("");
+                }}
+                className="btn btn-ghost btn-sm"
+              >
+                <IconClose className="h-4 w-4" /> Batal edit
+              </button>
+            )}
+            <button disabled={busy} className="btn btn-teal ml-auto">
+              {editingId !== null ? "Simpan Perubahan" : "Tambahkan"}
+            </button>
+          </div>
+        </form>
+      </section>
 
       {/* Import CSV */}
       <form
         onSubmit={handleImport}
-        className="mb-8 flex items-center gap-3 rounded-2xl border border-zinc-200 p-5 text-sm dark:border-zinc-800"
+        className="card mt-5 flex flex-wrap items-center gap-4 border-l-8 border-l-sun p-6"
       >
-        <h2 className="font-semibold">Import CSV</h2>
+        <div className="min-w-0">
+          <h2 className="section-title text-xl">Import CSV</h2>
+          <p className="mt-1 text-xs text-ink-soft">
+            Format:{" "}
+            <code className="rounded bg-ink/10 px-1.5 py-0.5 font-mono">
+              nrp,nama,photo_url
+            </code>
+          </p>
+        </div>
         <input
           type="file"
           name="csv"
           accept=".csv"
           disabled={busy}
-          className="text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-100 file:px-3 file:py-1.5 file:font-semibold dark:file:bg-zinc-800"
+          className="min-w-0 flex-1 text-sm text-ink-soft file:mr-3 file:cursor-pointer file:rounded-lg file:border-2 file:border-ink file:bg-ink file:px-3 file:py-1.5 file:font-display file:text-sm file:font-bold file:text-paper"
         />
-        <button
-          disabled={busy}
-          className="rounded-lg border border-zinc-300 px-4 py-1.5 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-        >
+        <button disabled={busy} className="btn btn-ink">
           Import
         </button>
-        <span className="ml-auto hidden text-xs text-zinc-400 sm:block">
-          Format: <code>nrp,nama,photo_url</code>
-        </span>
       </form>
 
       {/* Daftar */}
-      <div className="flex items-center gap-3">
-        <input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Cari nama / NRP…"
-          className="w-full max-w-xs rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-        />
-        <span className="text-sm text-zinc-400">Total: {total}</span>
-      </div>
+      <section className="mt-10">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="section-title">Daftar Mahasiswa</h2>
+          <span className="chip ml-auto bg-ink text-paper tabular-nums">
+            Total {total}
+          </span>
+        </div>
 
-      <ul className="mt-4 divide-y divide-zinc-200 dark:divide-zinc-800">
-        {students.map((s) => {
-          const url = photoUrl(s.photo_path);
-          return (
-            <li
-              key={s.id}
-              className="flex items-center gap-4 py-3"
-            >
-              {url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={url}
-                  alt={s.name}
-                  className="h-12 w-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-200 text-zinc-500 dark:bg-zinc-800">
-                  {s.name.charAt(0).toUpperCase()}
+        <div className="relative mt-4 max-w-sm">
+          <IconSearch className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-ink/40" />
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Cari nama / NRP…"
+            className="input pl-10"
+          />
+        </div>
+
+        <ul className="card mt-4 divide-y-2 divide-ink/10">
+          {students.map((s, i) => {
+            const url = photoUrl(s.photo_path);
+            return (
+              <li key={s.id} className="flex items-center gap-4 px-5 py-4">
+                {url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={url}
+                    alt={s.name}
+                    className="h-12 w-12 shrink-0 rounded-xl border-2 border-ink object-cover shadow-[2px_2px_0_0_var(--ink)]"
+                  />
+                ) : (
+                  <div
+                    className={`${avatarColors[i % avatarColors.length]} grid h-12 w-12 shrink-0 place-items-center rounded-xl border-2 border-ink font-display text-lg font-extrabold text-ink shadow-[2px_2px_0_0_var(--ink)]`}
+                  >
+                    {s.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-display font-bold">{s.name}</p>
+                  <span className="chip mt-1 bg-paper text-ink-soft">
+                    {s.nrp}
+                  </span>
                 </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{s.name}</p>
-                <p className="text-sm text-zinc-400">{s.nrp}</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => startEdit(s)}
-                  className="rounded-lg border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(s.id, s.name)}
-                  className="rounded-lg border border-red-300 px-3 py-1 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950"
-                >
-                  Hapus
-                </button>
-              </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    onClick={() => startEdit(s)}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    <IconPencil className="h-3.5 w-3.5" /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(s.id, s.name)}
+                    className="btn btn-coral btn-sm"
+                  >
+                    <IconTrash className="h-3.5 w-3.5" /> Hapus
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+          {students.length === 0 && (
+            <li className="px-5 py-12 text-center text-sm text-ink-soft">
+              Belum ada data. Tambahkan lewat form atau import CSV.
             </li>
-          );
-        })}
-        {students.length === 0 && (
-          <li className="py-8 text-center text-sm text-zinc-400">
-            Belum ada data. Tambahkan lewat form atau import CSV.
-          </li>
-        )}
-      </ul>
+          )}
+        </ul>
 
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <button
-          disabled={page <= 1}
-          onClick={() => setPage((p) => p - 1)}
-          className="rounded-lg border border-zinc-300 px-3 py-1 disabled:opacity-40 dark:border-zinc-700"
-        >
-          ← Sebelumnya
-        </button>
-        <span className="text-zinc-500">
-          Halaman {page} / {totalPages}
-        </span>
-        <button
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-          className="rounded-lg border border-zinc-300 px-3 py-1 disabled:opacity-40 dark:border-zinc-700"
-        >
-          Berikutnya →
-        </button>
-      </div>
+        <div className="mt-5 flex items-center justify-between">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="btn btn-ghost btn-sm"
+          >
+            Sebelumnya
+          </button>
+          <span className="chip bg-paper text-ink-soft tabular-nums">
+            Halaman {page} / {totalPages}
+          </span>
+          <button
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="btn btn-ghost btn-sm"
+          >
+            Berikutnya
+          </button>
+        </div>
+      </section>
     </main>
   );
 }

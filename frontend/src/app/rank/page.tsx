@@ -1,19 +1,32 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import {
   claimReward,
   createReward,
   deleteReward,
   getProgress,
+  listSessionAnswers,
   listSessions,
+  photoUrl,
   type PlaySessionItem,
   type ProgressData,
   type Reward,
   type RewardView,
+  type SessionAnswer,
   updateReward,
 } from "@/lib/api";
+import {
+  IconArrowRight,
+  IconCheck,
+  IconClose,
+  IconGift,
+  IconPencil,
+  IconStar,
+  IconTrash,
+} from "@/components/icons";
+
+const CARD_ACCENTS = ["bg-sun", "bg-teal", "bg-blue", "bg-berry", "bg-coral"];
 
 export default function RankPage() {
   const [progress, setProgress] = useState<ProgressData | null>(null);
@@ -26,6 +39,11 @@ export default function RankPage() {
   const [description, setDescription] = useState("");
   const [target, setTarget] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  // evaluasi sesi (expandable)
+  const [answersOpen, setAnswersOpen] = useState<number | null>(null);
+  const [answersBySession, setAnswersBySession] = useState<Record<number, SessionAnswer[]>>({});
+  const [answersLoadingId, setAnswersLoadingId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -40,6 +58,24 @@ export default function RankPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function toggleAnswers(id: number) {
+    if (answersOpen === id) {
+      setAnswersOpen(null);
+      return;
+    }
+    setAnswersOpen(id);
+    if (answersBySession[id]) return;
+    setAnswersLoadingId(id);
+    try {
+      const data = await listSessionAnswers(id);
+      setAnswersBySession((m) => ({ ...m, [id]: data }));
+    } catch (e) {
+      setMessage({ kind: "err", text: (e as Error).message });
+    } finally {
+      setAnswersLoadingId(null);
+    }
+  }
 
   async function handleRewardSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,7 +109,7 @@ export default function RankPage() {
       const res = await claimReward(r.id);
       setMessage({
         kind: "ok",
-        text: `🎉 Reward "${res.reward_name}" diklaim (dengan ${res.claimed_reward.points_at_claim} poin). Poin sekarang 0.`,
+        text: `Reward "${res.reward_name}" diklaim (dengan ${res.claimed_reward.points_at_claim} poin). Poin sekarang 0.`,
       });
       await load();
     } catch (e) {
@@ -108,243 +144,406 @@ export default function RankPage() {
     new Date(iso).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
 
   return (
-    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
-      <Link href="/" className="text-sm text-zinc-400 hover:underline">
-        ← Beranda
-      </Link>
-      <h1 className="mt-1 text-2xl font-bold">Rank — Poin & Self-Reward 🏆</h1>
+    <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
+      <header>
+        <span className="chip bg-teal text-ink">Rank & self-reward</span>
+        <h1 className="mt-3 font-display text-4xl font-extrabold tracking-tight">
+          Poin & <span className="text-teal-deep">Hadiahmu</span>
+        </h1>
+        <p className="mt-2 max-w-xl text-ink-soft">
+          Kumpulin poin dari tiap sesi main, terus klaim reward yang targetnya
+          udah nembus — poin balik ke 0, motivasi naik lagi.
+        </p>
+      </header>
 
       {message && (
         <div
-          className={`mt-4 rounded-lg border px-4 py-3 text-sm ${
+          className={`animate-pop mt-6 rounded-xl border-2 px-4 py-3 text-sm font-medium ${
             message.kind === "ok"
-              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-              : "border-red-300 bg-red-50 text-red-800"
+              ? "border-good/50 bg-good/10 text-good"
+              : "border-bad/50 bg-bad/10 text-bad"
           }`}
         >
           {message.text}
         </div>
       )}
 
-      {/* Kartu poin */}
-      <div className="mt-6 rounded-2xl border border-zinc-200 p-6 dark:border-zinc-800">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-sm text-zinc-400">Poin berjalan</p>
-            <p className="text-5xl font-bold">⭐ {progress?.current_points ?? "–"}</p>
-            <p className="mt-1 text-sm text-zinc-400">
-              Total poin pernah didapat: {progress?.total_points ?? "–"}
+      {/* Kartu poin utama */}
+      <section className="card mt-8 p-6 sm:p-8">
+        <div className="flex flex-col gap-8 sm:flex-row sm:items-center">
+          <div className="shrink-0 rounded-2xl border-2 border-ink bg-ink p-6 text-center shadow-[4px_4px_0_0_var(--sun-deep)]">
+            <p className="text-[11px] font-bold tracking-widest text-paper/70 uppercase">
+              Poin berjalan
+            </p>
+            <p className="mt-1 font-display text-6xl font-extrabold tracking-tight text-sun tabular-nums">
+              {progress?.current_points ?? "–"}
+            </p>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-paper/70 tabular-nums">
+              <IconStar className="h-4 w-4 text-sun" /> total {progress?.total_points ?? "–"}
             </p>
           </div>
-          {progress?.next_reward ? (
-            <div className="w-1/2 text-right">
-              <p className="text-sm text-zinc-400">
-                Reward berikutnya:{" "}
-                <strong className="text-zinc-100">
-                  {progress.next_reward.name}
-                </strong>{" "}
-                ({progress.next_reward.target_points} poin)
+
+          <div className="min-w-0 flex-1">
+            {progress?.next_reward ? (
+              <>
+                <p className="text-sm text-ink-soft">
+                  Reward berikutnya:{" "}
+                  <strong className="font-display text-base text-ink">
+                    {progress.next_reward.name}
+                  </strong>{" "}
+                  — target <strong className="tabular-nums">{progress.next_reward.target_points}</strong> poin
+                </p>
+                <div className="mt-3 h-5 w-full overflow-hidden rounded-xl border-2 border-ink bg-paper shadow-[2px_2px_0_0_var(--ink)]">
+                  <div
+                    className="flex h-full items-center rounded-l-[10px] border-r-2 border-ink bg-teal transition-all"
+                    style={{ width: `${Math.min(100, progress.next_reward_percent)}%` }}
+                  >
+                    {progress.next_reward_percent >= 20 && (
+                      <span className="pl-2 font-display text-[11px] font-extrabold text-ink">
+                        {progress.next_reward_percent}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-2 text-xs font-medium text-ink-soft tabular-nums">
+                  {progress.next_reward_percent}% tercapai —{" "}
+                  {Math.max(0, progress.next_reward.target_points - (progress?.current_points ?? 0))}{" "}
+                  poin lagi
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-ink-soft">
+                {progress && progress.rewards.length > 0
+                  ? "Semua reward sudah tercapai!"
+                  : "Buat reward pertamamu di bawah"}
               </p>
-              <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all"
-                  style={{ width: `${Math.min(100, progress.next_reward_percent)}%` }}
-                />
-              </div>
-              <p className="mt-1 text-xs text-zinc-400">
-                {progress.next_reward_percent}% tercapai
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-400 text-right">
-              {progress && progress.rewards.length > 0
-                ? "🎯 Semua reward sudah tercapai!"
-                : "Buat reward pertamamu di bawah 👇"}
-            </p>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Form reward */}
-      <form
-        onSubmit={handleRewardSubmit}
-        className="mt-6 grid gap-4 rounded-2xl border border-zinc-200 p-6 dark:border-zinc-800"
-      >
-        <h2 className="font-semibold">
-          {editingId !== null ? `Edit Reward #${editingId}` : "Tambah Reward"}
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <label className="flex flex-col gap-1 text-sm">
-            Nama reward
-            <input
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nonton 1 episode anime"
-              className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Target poin
-            <input
-              required
-              type="number"
-              min={1}
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              placeholder="50"
-              className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Deskripsi (opsional)
-            <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Saya akan…"
-              className="rounded-lg border border-zinc-300 px-3 py-2 dark:border-zinc-700"
-            />
-          </label>
-        </div>
-        <div className="flex gap-3">
-          <button
-            disabled={busy}
-            className="rounded-lg bg-zinc-900 px-5 py-2 text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-black"
-          >
-            {editingId !== null ? "Simpan Perubahan" : "Tambah Reward"}
-          </button>
+      <section className="card mt-8 p-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="section-title">
+            {editingId !== null ? "Edit Reward" : "Tambah Reward"}
+          </h2>
           {editingId !== null && (
-            <button
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setName("");
-                setDescription("");
-                setTarget("");
-              }}
-              className="text-sm text-zinc-500 underline hover:text-zinc-800"
-            >
-              Batal
-            </button>
+            <span className="chip bg-berry text-paper">Mengedit #{editingId}</span>
           )}
         </div>
-      </form>
+
+        <form onSubmit={handleRewardSubmit} className="mt-5">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <label className="flex flex-col gap-1.5">
+              <span className="label">Nama reward</span>
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nonton 1 episode anime"
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="label">Target poin</span>
+              <input
+                required
+                type="number"
+                min={1}
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+                placeholder="50"
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="label">Deskripsi (opsional)</span>
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Saya akan…"
+                className="input"
+              />
+            </label>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button disabled={busy} className="btn btn-teal">
+              {editingId !== null ? "Simpan Perubahan" : "Tambah Reward"}
+            </button>
+            {editingId !== null && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setName("");
+                  setDescription("");
+                  setTarget("");
+                }}
+                className="btn btn-ghost"
+              >
+                <IconClose className="h-4 w-4" /> Batal
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
 
       {/* Daftar reward */}
-      <h2 className="mt-8 font-semibold">Daftar Reward</h2>
-      <div className="mt-3 grid gap-4 sm:grid-cols-3">
-        {(progress?.rewards ?? []).map((r) => (
-          <div
-            key={r.id}
-            className={`rounded-2xl border p-5 ${
-              r.achievable
-                ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950"
-                : "border-zinc-200 dark:border-zinc-800"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold">{r.name}</h3>
-              {r.achievable && <span className="text-lg">🎉</span>}
-            </div>
-            {r.description && (
-              <p className="mt-1 text-sm text-zinc-500">{r.description}</p>
-            )}
-            <p className="mt-3 text-sm text-zinc-500">
-              Target: <strong>{r.target_points}</strong> poin
+      <section className="mt-10">
+        <h2 className="section-title">Daftar Reward</h2>
+        <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {(progress?.rewards ?? []).map((r, i) => {
+            const accent = CARD_ACCENTS[i % CARD_ACCENTS.length];
+            const remaining = Math.max(
+              0,
+              r.target_points - (progress?.current_points ?? 0)
+            );
+            return (
+              <div key={r.id} className="card overflow-hidden">
+                <span className={`${accent} block h-2.5 w-full border-b-2 border-ink`} />
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-display text-lg leading-tight font-extrabold">
+                      {r.name}
+                    </h3>
+                    {r.achievable && (
+                      <span className="chip shrink-0 bg-coral text-paper">Siap klaim</span>
+                    )}
+                  </div>
+                  {r.description && (
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                      {r.description}
+                    </p>
+                  )}
+
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-ink-soft tabular-nums">
+                        Target {r.target_points} poin
+                      </span>
+                      <span className="chip bg-paper text-ink tabular-nums">{r.percent}%</span>
+                    </div>
+                    <div className="mt-2 h-4 w-full overflow-hidden rounded-lg border-2 border-ink bg-paper shadow-[2px_2px_0_0_var(--ink)]">
+                      <div
+                        className={`h-full rounded-l-[6px] border-r-2 border-ink ${
+                          r.achievable ? "bg-coral" : "bg-sun"
+                        } transition-all`}
+                        style={{ width: `${r.percent}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {r.achievable ? (
+                      <button
+                        disabled={busy}
+                        onClick={() => handleClaim(r)}
+                        className="btn btn-coral btn-sm"
+                      >
+                        <IconGift className="h-4 w-4" /> Klaim reward
+                      </button>
+                    ) : (
+                      <span className="chip bg-ink text-paper tabular-nums">
+                        {remaining} poin lagi
+                      </span>
+                    )}
+                    <button
+                      onClick={() => startEdit(r)}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      <IconPencil className="h-3.5 w-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteReward(r)}
+                      className="btn btn-ghost btn-sm text-bad"
+                    >
+                      <IconTrash className="h-3.5 w-3.5" /> Hapus
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {(progress?.rewards ?? []).length === 0 && (
+            <p className="text-sm text-ink-soft">
+              Belum ada reward. Tambahkan: mis. &ldquo;Nonton 1 episode&rdquo; target 50 poin.
             </p>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-              <div
-                className="h-full rounded-full bg-amber-400"
-                style={{ width: `${r.percent}%` }}
-              />
-            </div>
-            <p className="mt-1 text-xs text-zinc-400">{r.percent}%</p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {r.achievable ? (
-                <button
-                  disabled={busy}
-                  onClick={() => handleClaim(r)}
-                  className="rounded-lg bg-amber-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
-                >
-                  Klaim reward 🎁
-                </button>
-              ) : (
-                <span className="text-xs text-zinc-400">
-                  {r.target_points - (progress?.current_points ?? 0)} poin lagi
-                </span>
-              )}
-              <button
-                onClick={() => startEdit(r)}
-                className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDeleteReward(r)}
-                className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950"
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        ))}
-        {(progress?.rewards ?? []).length === 0 && (
-          <p className="text-sm text-zinc-400">
-            Belum ada reward. Tambahkan: mis. &ldquo;Nonton 1 episode&rdquo; target 50 poin.
-          </p>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
 
       {/* Riwayat klaim */}
-      <h2 className="mt-8 font-semibold">Riwayat Klaim</h2>
-      <ul className="mt-3 divide-y divide-zinc-200 dark:divide-zinc-800">
-        {(progress?.claimed ?? []).map((cl) => (
-          <li key={cl.id} className="flex items-center justify-between py-2 text-sm">
-            <span>
-              Reward #{cl.reward_id} diklaim dengan{" "}
-              <strong>{cl.points_at_claim} poin</strong>
-            </span>
-            <span className="text-zinc-400">{fmtDate(cl.claimed_at)}</span>
-          </li>
-        ))}
-        {(progress?.claimed ?? []).length === 0 && (
-          <li className="py-2 text-sm text-zinc-400">Belum ada klaim.</li>
-        )}
-      </ul>
+      <section className="mt-10">
+        <h2 className="section-title">Riwayat Klaim</h2>
+        <ul className="card mt-4 divide-y-2 divide-ink/10">
+          {(progress?.claimed ?? []).map((cl) => (
+            <li
+              key={cl.id}
+              className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm"
+            >
+              <span className="inline-flex items-center gap-2 font-medium">
+                <IconGift className="h-4 w-4 shrink-0 text-coral-deep" />
+                Reward {cl.reward_id ? `#${cl.reward_id}` : ""} diklaim dengan{" "}
+                <strong className="tabular-nums">{cl.points_at_claim} poin</strong>
+              </span>
+              <span className="chip bg-paper text-ink-soft">{fmtDate(cl.claimed_at)}</span>
+            </li>
+          ))}
+          {(progress?.claimed ?? []).length === 0 && (
+            <li className="px-5 py-4 text-sm text-ink-soft">
+              Belum ada klaim — reward menunggu targetmu.
+            </li>
+          )}
+        </ul>
+      </section>
 
       {/* Riwayat sesi */}
-      <h2 className="mt-8 font-semibold">Riwayat Sesi Permainan</h2>
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[480px] text-sm">
-          <thead>
-            <tr className="border-b border-zinc-200 text-left text-zinc-400 dark:border-zinc-800">
-              <th className="py-2">Tanggal</th>
-              <th>Benar / Total</th>
-              <th>Akurasi</th>
-              <th>Poin sesi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessions.map((s) => (
-              <tr key={s.id} className="border-b border-zinc-100 dark:border-zinc-900">
-                <td className="py-2">{fmtDate(s.played_at)}</td>
-                <td>
-                  {s.correct_count} / {s.total_cards}
-                </td>
-                <td>{s.accuracy}%</td>
-                <td>+{s.points_earned}</td>
+      <section className="mt-10">
+        <h2 className="section-title">Riwayat Sesi Permainan</h2>
+        <div className="card mt-4 overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead>
+              <tr className="border-b-2 border-ink bg-ink text-left text-paper">
+                <th className="px-5 py-3 font-display text-xs font-extrabold tracking-widest uppercase">
+                  Tanggal
+                </th>
+                <th className="px-5 py-3 font-display text-xs font-extrabold tracking-widest uppercase">
+                  Benar / Total
+                </th>
+                <th className="px-5 py-3 font-display text-xs font-extrabold tracking-widest uppercase">
+                  Akurasi
+                </th>
+                <th className="px-5 py-3 font-display text-xs font-extrabold tracking-widest uppercase">
+                  Poin sesi
+                </th>
+                <th className="px-5 py-3 text-right font-display text-xs font-extrabold tracking-widest uppercase">
+                  Evaluasi
+                </th>
               </tr>
-            ))}
-            {sessions.length === 0 && (
-              <tr>
-                <td colSpan={4} className="py-3 text-zinc-400">
-                  Belum ada sesi bermain.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {sessions.map((s) => (
+                <SessionRow
+                  key={s.id}
+                  session={s}
+                  open={answersOpen === s.id}
+                  loading={answersLoadingId === s.id}
+                  answers={answersBySession[s.id]}
+                  onToggle={() => toggleAnswers(s.id)}
+                  fmtDate={fmtDate}
+                />
+              ))}
+              {sessions.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-5 py-4 text-ink-soft">
+                    Belum ada sesi bermain — ayo main di halaman Play!
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
+  );
+}
+
+function SessionRow({
+  session,
+  open,
+  loading,
+  answers,
+  onToggle,
+  fmtDate,
+}: {
+  session: PlaySessionItem;
+  open: boolean;
+  loading: boolean;
+  answers?: SessionAnswer[];
+  onToggle: () => void;
+  fmtDate: (iso: string) => string;
+}) {
+  return (
+    <>
+      <tr className="border-b border-ink/10 hover:bg-paper">
+        <td className="px-5 py-3.5">{fmtDate(session.played_at)}</td>
+        <td className="px-5 py-3.5 font-medium tabular-nums">
+          {session.correct_count} / {session.total_cards}
+        </td>
+        <td className="px-5 py-3.5 tabular-nums">{session.accuracy}%</td>
+        <td className="px-5 py-3.5 font-display font-bold text-good tabular-nums">
+          +{session.points_earned}
+        </td>
+        <td className="px-5 py-3.5 text-right">
+          <button onClick={onToggle} disabled={loading} className="btn btn-ghost btn-sm">
+            {open ? <IconClose className="h-3.5 w-3.5" /> : <IconArrowRight className="h-3.5 w-3.5" />}
+            {open ? "Tutup" : "Tinjau"}
+          </button>
+        </td>
+      </tr>
+      {open && (
+        <tr className="border-b border-ink/10 bg-paper">
+          <td colSpan={5} className="px-5 py-4">
+            {loading ? (
+              <p className="text-sm font-medium text-ink-soft">Memuat detail jawaban…</p>
+            ) : !answers || answers.length === 0 ? (
+              <p className="text-sm text-ink-soft">
+                Belum ada detail jawaban untuk sesi ini (dibuat sebelum fitur evaluasi).
+              </p>
+            ) : (
+              <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                {answers.map((a) => {
+                  const url = photoUrl(a.photo_path);
+                  return (
+                    <div
+                      key={a.id}
+                      className={`flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 ${
+                        a.correct
+                          ? "border-ink/15 bg-card"
+                          : "border-bad/50 bg-bad/10"
+                      }`}
+                    >
+                      {url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={url}
+                          alt={a.student_name}
+                          className="h-10 w-10 shrink-0 rounded-lg border-2 border-ink object-cover"
+                        />
+                      ) : (
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border-2 border-ink bg-paper font-display font-extrabold text-ink-soft">
+                          ?
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-display font-bold">
+                          {a.student_name}
+                        </p>
+                        {a.correct ? (
+                          <p className="text-xs text-ink-soft">Dijawab benar</p>
+                        ) : (
+                          <p className="truncate text-xs text-ink-soft">
+                            Kamu jawab{" "}
+                            <span className="font-semibold text-bad line-through">
+                              {a.chosen_name || "—"}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                      {a.correct ? (
+                        <IconCheck className="h-4 w-4 shrink-0 text-good" />
+                      ) : (
+                        <IconClose className="h-4 w-4 shrink-0 text-bad" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

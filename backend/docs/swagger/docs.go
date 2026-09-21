@@ -77,7 +77,7 @@ const docTemplate = `{
                 "summary": "Akhiri sesi \u0026 catat statistik",
                 "parameters": [
                     {
-                        "description": "Hasil sesi",
+                        "description": "Hasil sesi (+ optional answers[] detail jawaban)",
                         "name": "payload",
                         "in": "body",
                         "required": true,
@@ -369,6 +369,49 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Daftar play_sessions (maks 50 terakhir)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/sessions/{id}/answers": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "rank"
+                ],
+                "summary": "Detail jawaban satu sesi",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID sesi",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar session_answers (student_name, photo_path, chosen_name, correct, points_delta)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "ID sesi tidak valid",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Sesi tidak ditemukan",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true

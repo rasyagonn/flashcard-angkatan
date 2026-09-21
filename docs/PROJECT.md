@@ -3,7 +3,7 @@
 > Aplikasi **flashcard** untuk mengingat nama mahasiswa satu angkatan.
 > Kamu melihat foto temanmu → menebak namanya → mengumpulkan poin → merayakan dengan **self-reward**.
 
-**Status:** Fase 4 selesai — aplikasi MVP lengkap: Swagger UI, unit test 18/18, polish error handling & seed, dokumentasi final ✅
+**Status:** MVP lengkap + fitur evaluasi: Swagger UI, unit test Go 22/22 lulus, polish error handling & seed, evaluasi jawaban per sesi (detail salah/benar di akhir game dan di riwayat Rank), de-emoji UI (ikon SVG), dokumentasi onboarding untuk kolaborator
 **Dokumen oleh:** Big Pickle · dipersiapkan bersama pemilik proyek
 
 ---
@@ -359,7 +359,8 @@ npm run dev               # → http://localhost:3000
 | **Fase 1** ✅ | Setup monorepo, model GORM, koneksi DB, CRUD mahasiswa + upload foto + import CSV | Data mahasiswa bisa dikelola |
 | **Fase 2** ✅ | API play (round/answer/end), skor +2/-1, riwayat sesi | Flashcard bisa dimainkan |
 | **Fase 3** ✅ | Reward CRUD, progress UI, klaim & reset poin, statistik | Fitur rank lengkap |
-| **Fase 4** ✅ | Swagger UI (swaggo) di `/swagger/index.html`, unit test Go 18 kasus, polish (hapus foto saat hapus mahasiswa, seed reward), dokumentasi final | Siap dipakai harian |
+| **Fase 4** ✅ | Swagger UI (swaggo) di `/swagger/index.html`, unit test Go 22 kasus, polish (hapus foto saat hapus mahasiswa, seed reward), dokumentasi final | Siap dipakai harian |
+| **Fase 5** ✅ | Evaluasi setelah game: tabel `session_answers`, `/play/end` menyimpan detail jawaban, endpoint `GET /sessions/{id}/answers`, UI Evaluasi di layar selesai + Tinjau di halaman Rank; de-emoji UI (ikon SVG); dokumen onboarding kolaborator | Bisa belajar dari kesalahan + teman bisa run di laptop sendiri |
 
 ---
 

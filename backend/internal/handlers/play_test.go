@@ -31,7 +31,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	sqlDB.SetMaxOpenConns(1) // shared-cache butuh satu koneksi
 	if err := db.AutoMigrate(
 		&models.Student{}, &models.Reward{}, &models.UserProgress{},
-		&models.PlaySession{}, &models.ClaimedReward{},
+		&models.PlaySession{}, &models.ClaimedReward{}, &models.SessionAnswer{},
 	); err != nil {
 		t.Fatalf("gagal migrasi: %v", err)
 	}
@@ -347,6 +347,122 @@ func TestEnd_MencatatSesiDenganBenar(t *testing.T) {
 	db.Model(&models.PlaySession{}).Count(&count)
 	if count != 1 {
 		t.Errorf("harus ada 1 session, ada %d", count)
+	}
+}
+
+func TestEnd_SesiBolehSeluruhSalah(t *testing.T) {
+	db := setupTestDB(t)
+	h := NewPlayHandler(db)
+
+	// correct_count = 0 harus tetap diterima (regression: binding required menolak 0)
+	c, w := makeContext(http.MethodPost, "/api/v1/play/end", map[string]any{"total_cards": 3, "correct_count": 0, "wrong_count": 3})
+	h.End(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("harusnya 200, dapat %d body: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Data struct {
+			PointsEarned int `json:"points_earned"`
+		} `json:"data"`
+	}
+	decode(t, w, &resp)
+	if resp.Data.PointsEarned != 0 { // 3*(-1) → floor 0
+		t.Errorf("points_earned harus 0, dapat %d", resp.Data.PointsEarned)
+	}
+}
+
+// ── tests: evaluasi (detail jawaban) ──────────────────────────────
+
+func TestEnd_MenyimpanDetailJawaban(t *testing.T) {
+	db := setupTestDB(t)
+	h := NewPlayHandler(db)
+
+	answers := []map[string]any{
+		{"student_id": 1, "student_name": "Andi", "photo_path": "/uploads/a.png", "chosen_name": "Andi", "correct": true, "points_delta": 2},
+		{"student_id": 2, "student_name": "Budi", "photo_path": "/uploads/b.png", "chosen_name": "Andi", "correct": false, "points_delta": -1},
+		{"student_id": 3, "student_name": "Citra", "photo_path": "/uploads/c.png", "chosen_name": "Dewi", "correct": false, "points_delta": -1},
+	}
+	c, w := makeContext(http.MethodPost, "/api/v1/play/end", map[string]any{
+		"total_cards":   3,
+		"correct_count": 1,
+		"wrong_count":   2,
+		"answers":       answers,
+	})
+	h.End(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d body: %s", w.Code, w.Body.String())
+	}
+
+	var saved []models.SessionAnswer
+	if err := db.Order("id ASC").Find(&saved).Error; err != nil {
+		t.Fatalf("gagal mengambil session_answers: %v", err)
+	}
+	if len(saved) != 3 {
+		t.Fatalf("harus ada 3 detail jawaban, ada %d", len(saved))
+	}
+	if saved[0].StudentID != 1 || !saved[0].Correct || saved[0].PointsDelta != 2 {
+		t.Errorf("jawaban pertama salah: %+v", saved[0])
+	}
+	if saved[1].Correct || saved[1].ChosenName != "Andi" || saved[1].PointsDelta != -1 {
+		t.Errorf("jawaban kedua salah: %+v", saved[1])
+	}
+	if saved[2].ChosenName != "Dewi" {
+		t.Errorf("chosen_name jawaban ketiga harus 'Dewi', dapat '%s'", saved[2].ChosenName)
+	}
+	// semua jawaban harus terikat ke session yang sama
+	if saved[0].SessionID == 0 || saved[0].SessionID != saved[1].SessionID || saved[0].SessionID != saved[2].SessionID {
+		t.Errorf("session_id tidak konsisten: %+v", saved)
+	}
+}
+
+func TestSessionAnswers_MengembalikanDetail(t *testing.T) {
+	db := setupTestDB(t)
+	h := NewRankHandler(db)
+
+	session := models.PlaySession{TotalCards: 2, CorrectCount: 1, WrongCount: 1, Accuracy: 0, PointsEarned: 1}
+	if err := db.Create(&session).Error; err != nil {
+		t.Fatalf("gagal buat session: %v", err)
+	}
+	db.Create(&models.SessionAnswer{
+		SessionID: session.ID, StudentID: 1, StudentName: "Andi",
+		PhotoPath: "/uploads/a.png", ChosenName: "Andi", Correct: true, PointsDelta: 2,
+	})
+	db.Create(&models.SessionAnswer{
+		SessionID: session.ID, StudentID: 2, StudentName: "Budi",
+		PhotoPath: "/uploads/b.png", ChosenName: "Andi", Correct: false, PointsDelta: -1,
+	})
+
+	c, w := makeContext(http.MethodGet, "/api/v1/sessions/"+fmt.Sprint(session.ID)+"/answers", nil)
+	c.Params = gin.Params{{Key: "id", Value: fmt.Sprint(session.ID)}}
+	h.SessionAnswers(c)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d body: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Data []models.SessionAnswer `json:"data"`
+	}
+	decode(t, w, &resp)
+	if len(resp.Data) != 2 {
+		t.Fatalf("harus ada 2 jawaban, ada %d", len(resp.Data))
+	}
+	if resp.Data[0].StudentName != "Andi" || !resp.Data[0].Correct {
+		t.Errorf("detail jawaban pertama salah: %+v", resp.Data[0])
+	}
+}
+
+func TestSessionAnswers_SesiTidakAda404(t *testing.T) {
+	db := setupTestDB(t)
+	h := NewRankHandler(db)
+
+	c, w := makeContext(http.MethodGet, "/api/v1/sessions/99/answers", nil)
+	c.Params = gin.Params{{Key: "id", Value: "99"}}
+	h.SessionAnswers(c)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("harusnya 404, dapat %d", w.Code)
 	}
 }
 

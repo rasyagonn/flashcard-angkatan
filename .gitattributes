@@ -1,0 +1,10 @@
+# Normalisasi akhir baris biar konsisten antar OS (Windows vs Mac/Linux)
+* text=auto eol=lf
+
+# Binary files jangan dinormalisasi
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary

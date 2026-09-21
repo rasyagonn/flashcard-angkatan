@@ -84,6 +84,7 @@ func main() {
 		api.GET("/progress", rankHandler.Progress)
 		api.POST("/rewards/:id/claim", rankHandler.Claim)
 		api.GET("/sessions", rankHandler.Sessions)
+		api.GET("/sessions/:id/answers", rankHandler.SessionAnswers)
 	}
 
 	log.Printf("FlashCard backend berjalan di http://localhost:%s", port)

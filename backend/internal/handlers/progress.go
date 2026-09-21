@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -168,4 +169,36 @@ func (h *RankHandler) Sessions(c *gin.Context) {
 		return
 	}
 	helpers.Success(c, http.StatusOK, sessions)
+}
+
+// SessionAnswers menampilkan detail jawaban satu sesi (untuk evaluasi:
+// kartu mana yang salah dan siapa nama yang benar).
+// @Summary Detail jawaban satu sesi
+// @Tags rank
+// @Produce json
+// @Param id path int true "ID sesi"
+// @Success 200 {object} map[string]interface{} "Daftar session_answers (student_name, photo_path, chosen_name, correct, points_delta)"
+// @Failure 400 {object} map[string]interface{} "ID sesi tidak valid"
+// @Failure 404 {object} map[string]interface{} "Sesi tidak ditemukan"
+// @Router /sessions/{id}/answers [get]
+func (h *RankHandler) SessionAnswers(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil || id == 0 {
+		helpers.Error(c, http.StatusBadRequest, "id sesi tidak valid")
+		return
+	}
+
+	var session models.PlaySession
+	if err := h.DB.First(&session, "id = ?", id).Error; err != nil {
+		helpers.Error(c, http.StatusNotFound, "sesi tidak ditemukan")
+		return
+	}
+
+	var answers []models.SessionAnswer
+	if err := h.DB.Where("session_id = ?", id).Order("id ASC").Find(&answers).Error; err != nil {
+		helpers.Error(c, http.StatusInternalServerError, "gagal mengambil detail jawaban")
+		return
+	}
+
+	helpers.Success(c, http.StatusOK, answers)
 }
