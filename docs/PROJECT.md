@@ -3,7 +3,7 @@
 > Aplikasi **flashcard** untuk mengingat nama mahasiswa satu angkatan.
 > Kamu melihat foto temanmu → menebak namanya → mengumpulkan poin → merayakan dengan **self-reward**.
 
-**Status:** Fase 3 selesai (Rank + self-reward + statistik); Fase 4 (Swagger, validasi, polish) berikutnya
+**Status:** Fase 4 selesai — aplikasi MVP lengkap: Swagger UI, unit test 18/18, polish error handling & seed, dokumentasi final ✅
 **Dokumen oleh:** Big Pickle · dipersiapkan bersama pemilik proyek
 
 ---
@@ -359,7 +359,7 @@ npm run dev               # → http://localhost:3000
 | **Fase 1** ✅ | Setup monorepo, model GORM, koneksi DB, CRUD mahasiswa + upload foto + import CSV | Data mahasiswa bisa dikelola |
 | **Fase 2** ✅ | API play (round/answer/end), skor +2/-1, riwayat sesi | Flashcard bisa dimainkan |
 | **Fase 3** ✅ | Reward CRUD, progress UI, klaim & reset poin, statistik | Fitur rank lengkap |
-| **Fase 4** | Swagger lengkap, error handling, validasi, tes (Go test + coba Postman), polish UI | Siap dipakai harian |
+| **Fase 4** ✅ | Swagger UI (swaggo) di `/swagger/index.html`, unit test Go 18 kasus, polish (hapus foto saat hapus mahasiswa, seed reward), dokumentasi final | Siap dipakai harian |
 
 ---
 

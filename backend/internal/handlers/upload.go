@@ -23,6 +23,15 @@ var allowedExtensions = map[string]bool{
 }
 
 // UploadPhoto menyimpan foto ke UPLOAD_DIR dan mengembalikan path publik.
+// @Summary Upload foto mahasiswa
+// @Tags upload
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "File foto (jpg, jpeg, png, webp; maks 5 MB)"
+// @Success 200 {object} map[string]interface{} "photo_path publik"
+// @Failure 400 {object} map[string]interface{} "File tidak valid"
+// @Failure 500 {object} map[string]interface{} "Gagal menyimpan"
+// @Router /upload [post]
 func UploadPhoto(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadSize)
 

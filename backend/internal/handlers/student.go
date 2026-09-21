@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -26,6 +28,15 @@ func NewStudentHandler(db *gorm.DB) *StudentHandler {
 }
 
 // CreateStudent menambah satu mahasiswa.
+// @Summary Tambah mahasiswa
+// @Tags students
+// @Accept json
+// @Produce json
+// @Param payload body object true "Data mahasiswa" SchemaExample({"nrp":"5025201001","name":"Andi Pratama","photo_path":"/uploads/x.png"})
+// @Success 201 {object} map[string]interface{} "Mahasiswa dibuat"
+// @Failure 400 {object} map[string]interface{} "Payload tidak valid"
+// @Failure 409 {object} map[string]interface{} "NRP sudah terdaftar"
+// @Router /students [post]
 func (h *StudentHandler) CreateStudent(c *gin.Context) {
 	var input struct {
 		NRP       string `json:"nrp" binding:"required"`
@@ -46,6 +57,14 @@ func (h *StudentHandler) CreateStudent(c *gin.Context) {
 }
 
 // ListStudents menampilkan daftar mahasiswa dengan pagination & pencarian.
+// @Summary Daftar mahasiswa
+// @Tags students
+// @Produce json
+// @Param page query int false "Halaman (default 1)"
+// @Param limit query int false "Jumlah per halaman (default 10, maks 100)"
+// @Param search query string false "Cari berdasarkan nama / NRP"
+// @Success 200 {object} map[string]interface{} "Daftar mahasiswa + pagination"
+// @Router /students [get]
 func (h *StudentHandler) ListStudents(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -86,6 +105,13 @@ func (h *StudentHandler) ListStudents(c *gin.Context) {
 }
 
 // GetStudent menampilkan detail satu mahasiswa.
+// @Summary Detail mahasiswa
+// @Tags students
+// @Produce json
+// @Param id path int true "ID mahasiswa"
+// @Success 200 {object} map[string]interface{} "Data mahasiswa"
+// @Failure 404 {object} map[string]interface{} "Tidak ditemukan"
+// @Router /students/{id} [get]
 func (h *StudentHandler) GetStudent(c *gin.Context) {
 	id := c.Param("id")
 	var student models.Student
@@ -97,6 +123,17 @@ func (h *StudentHandler) GetStudent(c *gin.Context) {
 }
 
 // UpdateStudent mengubah data mahasiswa.
+// @Summary Update mahasiswa
+// @Tags students
+// @Accept json
+// @Produce json
+// @Param id path int true "ID mahasiswa"
+// @Param payload body object true "Field yang ingin diubah" SchemaExample({"name":"Andi Kurnia"})
+// @Success 200 {object} map[string]interface{} "Data ter-update"
+// @Failure 400 {object} map[string]interface{} "Payload tidak valid"
+// @Failure 404 {object} map[string]interface{} "Tidak ditemukan"
+// @Failure 409 {object} map[string]interface{} "NRP sudah terdaftar"
+// @Router /students/{id} [put]
 func (h *StudentHandler) UpdateStudent(c *gin.Context) {
 	id := c.Param("id")
 	var student models.Student
@@ -132,7 +169,14 @@ func (h *StudentHandler) UpdateStudent(c *gin.Context) {
 	helpers.Success(c, http.StatusOK, student)
 }
 
-// DeleteStudent menghapus mahasiswa.
+// DeleteStudent menghapus mahasiswa beserta file foto lokalnya (bila ada).
+// @Summary Hapus mahasiswa
+// @Tags students
+// @Produce json
+// @Param id path int true "ID mahasiswa"
+// @Success 200 {object} map[string]interface{} "Mahasiswa terhapus"
+// @Failure 404 {object} map[string]interface{} "Tidak ditemukan"
+// @Router /students/{id} [delete]
 func (h *StudentHandler) DeleteStudent(c *gin.Context) {
 	id := c.Param("id")
 	var student models.Student
@@ -144,11 +188,32 @@ func (h *StudentHandler) DeleteStudent(c *gin.Context) {
 		helpers.Error(c, http.StatusInternalServerError, "gagal menghapus mahasiswa")
 		return
 	}
+
+	// hapus file foto lokal bila tersimpan di /uploads/
+	if strings.HasPrefix(student.PhotoPath, "/uploads/") {
+		filename := filepath.Base(strings.TrimPrefix(student.PhotoPath, "/uploads/"))
+		if filename != "." && filename != "" {
+			uploadDir := os.Getenv("UPLOAD_DIR")
+			if uploadDir == "" {
+				uploadDir = "./uploads"
+			}
+			_ = os.Remove(filepath.Join(uploadDir, filename))
+		}
+	}
+
 	helpers.Success(c, http.StatusOK, gin.H{"deleted": true, "id": student.ID})
 }
 
 // ImportStudents mengimport data massal dari file CSV (kolom: nrp,nama,photo_url).
 // Semua-atau-tidak: jika ada baris gagal, seluruh import dibatalkan (rollback).
+// @Summary Import mahasiswa (CSV)
+// @Tags students
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "File CSV (kolom: nrp,nama,photo_url)"
+// @Success 200 {object} map[string]interface{} "Ringkasan import"
+// @Failure 400 {object} map[string]interface{} "Ada baris gagal → rollback / file tidak valid"
+// @Router /students/import [post]
 func (h *StudentHandler) ImportStudents(c *gin.Context) {
 	fileHeader, err := c.FormFile("file")
 	if err != nil {

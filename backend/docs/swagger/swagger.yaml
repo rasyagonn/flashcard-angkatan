@@ -1,0 +1,456 @@
+basePath: /api/v1
+host: localhost:8080
+info:
+  contact: {}
+  description: 'API aplikasi flashcard untuk mengingat nama mahasiswa seangkatan:
+    kelola mahasiswa, main flashcard (skor +2/-1), dan kelola self-reward (klaim →
+    reset poin).'
+  title: FlashCard Angkatan API
+  version: "1.0"
+paths:
+  /play/answer:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Jawaban
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: correct, points_delta, current_points, correct_name
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload tidak valid
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Kartu tidak ditemukan
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Jawab pertanyaan
+      tags:
+      - play
+  /play/end:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Hasil sesi
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: session_id, points_earned, accuracy
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload tidak valid / tidak konsisten
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Akhiri sesi & catat statistik
+      tags:
+      - play
+  /play/round:
+    get:
+      parameters:
+      - description: ID kartu yang sudah dimainkan, pisahkan koma (1,2,3)
+        in: query
+        name: exclude
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: card_id, photo_url, options[4] — {finished:true} jika sesi
+            habis
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Minimal 4 mahasiswa berfoto
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Kesalahan server
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Ambil kartu acak (round baru)
+      tags:
+      - play
+  /progress:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: current_points, total_points, rewards (+achievable,percent),
+            next_reward, claimed
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Progress poin & reward
+      tags:
+      - rank
+  /rewards:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Daftar reward
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Daftar reward
+      tags:
+      - rewards
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Data reward
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Reward dibuat
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload tidak valid
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Tambah reward
+      tags:
+      - rewards
+  /rewards/{id}:
+    delete:
+      parameters:
+      - description: ID reward
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reward terhapus
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Tidak ditemukan
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Hapus reward
+      tags:
+      - rewards
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID reward
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Field yang ingin diubah
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reward ter-update
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload tidak valid
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Tidak ditemukan
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update reward
+      tags:
+      - rewards
+  /rewards/{id}/claim:
+    post:
+      parameters:
+      - description: ID reward
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: claimed_reward + poin direset ke 0
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Poin belum mencukupi
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Reward tidak ditemukan
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Klaim reward
+      tags:
+      - rank
+  /sessions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Daftar play_sessions (maks 50 terakhir)
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Riwayat sesi permainan
+      tags:
+      - rank
+  /students:
+    get:
+      parameters:
+      - description: Halaman (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Jumlah per halaman (default 10, maks 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Cari berdasarkan nama / NRP
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Daftar mahasiswa + pagination
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Daftar mahasiswa
+      tags:
+      - students
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Data mahasiswa
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Mahasiswa dibuat
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload tidak valid
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: NRP sudah terdaftar
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Tambah mahasiswa
+      tags:
+      - students
+  /students/{id}:
+    delete:
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Mahasiswa terhapus
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Tidak ditemukan
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Hapus mahasiswa
+      tags:
+      - students
+    get:
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Data mahasiswa
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Tidak ditemukan
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Detail mahasiswa
+      tags:
+      - students
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID mahasiswa
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Field yang ingin diubah
+        in: body
+        name: payload
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Data ter-update
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Payload tidak valid
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Tidak ditemukan
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: NRP sudah terdaftar
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update mahasiswa
+      tags:
+      - students
+  /students/import:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: 'File CSV (kolom: nrp,nama,photo_url)'
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ringkasan import
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ada baris gagal → rollback / file tidak valid
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Import mahasiswa (CSV)
+      tags:
+      - students
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: File foto (jpg, jpeg, png, webp; maks 5 MB)
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: photo_path publik
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: File tidak valid
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Gagal menyimpan
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Upload foto mahasiswa
+      tags:
+      - upload
+swagger: "2.0"

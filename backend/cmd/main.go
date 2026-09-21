@@ -7,12 +7,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "flashcard/docs/swagger" // dokumen Swagger hasil `swag init`
 
 	"flashcard/internal/database"
 	"flashcard/internal/handlers"
 	"flashcard/internal/middlewares"
 )
 
+// @title FlashCard Angkatan API
+// @version 1.0
+// @description API aplikasi flashcard untuk mengingat nama mahasiswa seangkatan: kelola mahasiswa, main flashcard (skor +2/-1), dan kelola self-reward (klaim → reset poin).
+// @host localhost:8080
+// @BasePath /api/v1
 func main() {
 	// muat .env bila tersedia (tidak fatal jika tidak ada)
 	_ = godotenv.Load()
@@ -38,6 +47,9 @@ func main() {
 		uploadDir = "./uploads"
 	}
 	r.Static("/uploads", uploadDir)
+
+	// Swagger UI → http://localhost:8080/swagger/index.html
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	studentHandler := handlers.NewStudentHandler(db)
 	playHandler := handlers.NewPlayHandler(db)

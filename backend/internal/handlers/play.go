@@ -49,6 +49,14 @@ func parseIDs(s string) []uint {
 
 // Round mengambil satu kartu acak + 4 opsi nama (diacak, tanpa penanda jawaban).
 // Query param `exclude` = id kartu yang sudah dimainkan pada sesi ini.
+// @Summary Ambil kartu acak (round baru)
+// @Tags play
+// @Produce json
+// @Param exclude query string false "ID kartu yang sudah dimainkan, pisahkan koma (1,2,3)"
+// @Success 200 {object} map[string]interface{} "card_id, photo_url, options[4] — {finished:true} jika sesi habis"
+// @Failure 400 {object} map[string]interface{} "Minimal 4 mahasiswa berfoto"
+// @Failure 500 {object} map[string]interface{} "Kesalahan server"
+// @Router /play/round [get]
 func (h *PlayHandler) Round(c *gin.Context) {
 	// butuh minimal 4 mahasiswa berfoto agar MCQ 4 opsi bisa dibentuk
 	var totalPlayable int64
@@ -115,6 +123,15 @@ func (h *PlayHandler) pickDecoys(card models.Student, count int) []models.Studen
 }
 
 // Answer memvalidasi jawaban dan mengaplikasikan skor (+2 benar, -1 salah, minimal 0).
+// @Summary Jawab pertanyaan
+// @Tags play
+// @Accept json
+// @Produce json
+// @Param payload body object true "Jawaban" SchemaExample({"card_id":1,"option_id":3})
+// @Success 200 {object} map[string]interface{} "correct, points_delta, current_points, correct_name"
+// @Failure 400 {object} map[string]interface{} "Payload tidak valid"
+// @Failure 404 {object} map[string]interface{} "Kartu tidak ditemukan"
+// @Router /play/answer [post]
 func (h *PlayHandler) Answer(c *gin.Context) {
 	var input struct {
 		CardID   uint `json:"card_id" binding:"required"`
@@ -165,6 +182,14 @@ func (h *PlayHandler) Answer(c *gin.Context) {
 }
 
 // End mencatat riwayat satu sesi permainan ke play_sessions.
+// @Summary Akhiri sesi & catat statistik
+// @Tags play
+// @Accept json
+// @Produce json
+// @Param payload body object true "Hasil sesi" SchemaExample({"total_cards":7,"correct_count":4,"wrong_count":3})
+// @Success 200 {object} map[string]interface{} "session_id, points_earned, accuracy"
+// @Failure 400 {object} map[string]interface{} "Payload tidak valid / tidak konsisten"
+// @Router /play/end [post]
 func (h *PlayHandler) End(c *gin.Context) {
 	var input struct {
 		TotalCards   int `json:"total_cards" binding:"required"`

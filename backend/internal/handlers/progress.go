@@ -45,6 +45,11 @@ type rewardView struct {
 }
 
 // Progress menampilkan poin, daftar reward (dengan status), reward berikutnya, dan riwayat klaim.
+// @Summary Progress poin & reward
+// @Tags rank
+// @Produce json
+// @Success 200 {object} map[string]interface{} "current_points, total_points, rewards (+achievable,percent), next_reward, claimed"
+// @Router /progress [get]
 func (h *RankHandler) Progress(c *gin.Context) {
 	progress, err := getOrInitProgress(h.DB)
 	if err != nil {
@@ -96,6 +101,14 @@ func (h *RankHandler) Progress(c *gin.Context) {
 }
 
 // Claim mengklaim reward: validasi poin ≥ target, catat riwayat klaim, lalu reset poin ke 0.
+// @Summary Klaim reward
+// @Tags rank
+// @Produce json
+// @Param id path int true "ID reward"
+// @Success 200 {object} map[string]interface{} "claimed_reward + poin direset ke 0"
+// @Failure 400 {object} map[string]interface{} "Poin belum mencukupi"
+// @Failure 404 {object} map[string]interface{} "Reward tidak ditemukan"
+// @Router /rewards/{id}/claim [post]
 func (h *RankHandler) Claim(c *gin.Context) {
 	id := c.Param("id")
 	var reward models.Reward
@@ -143,6 +156,11 @@ func (h *RankHandler) Claim(c *gin.Context) {
 }
 
 // Sessions menampilkan riwayat sesi permainan (statistik).
+// @Summary Riwayat sesi permainan
+// @Tags rank
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Daftar play_sessions (maks 50 terakhir)"
+// @Router /sessions [get]
 func (h *RankHandler) Sessions(c *gin.Context) {
 	var sessions []models.PlaySession
 	if err := h.DB.Order("played_at DESC").Limit(50).Find(&sessions).Error; err != nil {

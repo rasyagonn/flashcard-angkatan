@@ -21,6 +21,11 @@ func NewRewardHandler(db *gorm.DB) *RewardHandler {
 }
 
 // List menampilkan semua reward (urut target poin naik).
+// @Summary Daftar reward
+// @Tags rewards
+// @Produce json
+// @Success 200 {object} map[string]interface{} "Daftar reward"
+// @Router /rewards [get]
 func (h *RewardHandler) List(c *gin.Context) {
 	var rewards []models.Reward
 	if err := h.DB.Order("target_points ASC, id ASC").Find(&rewards).Error; err != nil {
@@ -31,6 +36,14 @@ func (h *RewardHandler) List(c *gin.Context) {
 }
 
 // Create menambah reward baru.
+// @Summary Tambah reward
+// @Tags rewards
+// @Accept json
+// @Produce json
+// @Param payload body object true "Data reward" SchemaExample({"name":"Nonton 1 episode","description":"Santai","target_points":50})
+// @Success 201 {object} map[string]interface{} "Reward dibuat"
+// @Failure 400 {object} map[string]interface{} "Payload tidak valid"
+// @Router /rewards [post]
 func (h *RewardHandler) Create(c *gin.Context) {
 	var input struct {
 		Name         string `json:"name" binding:"required"`
@@ -59,6 +72,16 @@ func (h *RewardHandler) Create(c *gin.Context) {
 }
 
 // Update mengubah reward.
+// @Summary Update reward
+// @Tags rewards
+// @Accept json
+// @Produce json
+// @Param id path int true "ID reward"
+// @Param payload body object true "Field yang ingin diubah" SchemaExample({"target_points":75})
+// @Success 200 {object} map[string]interface{} "Reward ter-update"
+// @Failure 400 {object} map[string]interface{} "Payload tidak valid"
+// @Failure 404 {object} map[string]interface{} "Tidak ditemukan"
+// @Router /rewards/{id} [put]
 func (h *RewardHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 	var reward models.Reward
@@ -98,6 +121,13 @@ func (h *RewardHandler) Update(c *gin.Context) {
 }
 
 // Delete menghapus reward.
+// @Summary Hapus reward
+// @Tags rewards
+// @Produce json
+// @Param id path int true "ID reward"
+// @Success 200 {object} map[string]interface{} "Reward terhapus"
+// @Failure 404 {object} map[string]interface{} "Tidak ditemukan"
+// @Router /rewards/{id} [delete]
 func (h *RewardHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	var reward models.Reward
