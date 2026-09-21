@@ -26,6 +26,6 @@ opencode-project/
 > 3. `cd backend && go run ./cmd` → http://localhost:8080
 > 4. `cd frontend && npm run dev` → http://localhost:3000
 
-Status: **Fase 1 selesai** ✅ — monorepo, model GORM (AutoMigrate), CRUD mahasiswa, upload foto, import CSV (all-or-nothing). Terverifikasi end-to-end terhadap PostgreSQL.
+Status: **Fase 3 selesai** ✅ — Play flashcard (skor +2/-1), Rank dengan self-reward (klaim → reset poin), dan statistik sesi. Semua terverifikasi end-to-end terhadap PostgreSQL.
 
 Catatan: folder `frontend/.npmrc` berisi `allow-scripts=**` untuk mengizinkan script instalasi npm (mengikuti kebijakan `allow-scripts` global di `~/.npmrc`).

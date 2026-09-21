@@ -41,6 +41,8 @@ func main() {
 
 	studentHandler := handlers.NewStudentHandler(db)
 	playHandler := handlers.NewPlayHandler(db)
+	rewardHandler := handlers.NewRewardHandler(db)
+	rankHandler := handlers.NewRankHandler(db)
 
 	api := r.Group("/api/v1")
 	{
@@ -61,6 +63,15 @@ func main() {
 		api.GET("/play/round", playHandler.Round)
 		api.POST("/play/answer", playHandler.Answer)
 		api.POST("/play/end", playHandler.End)
+
+		// Fase 3: reward, progress, klaim, statistik
+		api.GET("/rewards", rewardHandler.List)
+		api.POST("/rewards", rewardHandler.Create)
+		api.PUT("/rewards/:id", rewardHandler.Update)
+		api.DELETE("/rewards/:id", rewardHandler.Delete)
+		api.GET("/progress", rankHandler.Progress)
+		api.POST("/rewards/:id/claim", rankHandler.Claim)
+		api.GET("/sessions", rankHandler.Sessions)
 	}
 
 	log.Printf("FlashCard backend berjalan di http://localhost:%s", port)

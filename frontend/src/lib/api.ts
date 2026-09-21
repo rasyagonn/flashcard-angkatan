@@ -166,3 +166,90 @@ export async function endSession(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+// ── Rank & Reward (Fase 3) ──────────────────────────────
+
+export interface Reward {
+  id: number;
+  name: string;
+  description: string;
+  target_points: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RewardView extends Reward {
+  achievable: boolean;
+  percent: number;
+}
+
+export interface ClaimedReward {
+  id: number;
+  reward_id: number;
+  points_at_claim: number;
+  claimed_at: string;
+}
+
+export interface ProgressData {
+  current_points: number;
+  total_points: number;
+  rewards: RewardView[];
+  next_reward: Reward | null;
+  next_reward_percent: number;
+  claimed: ClaimedReward[];
+}
+
+export interface PlaySessionItem {
+  id: number;
+  played_at: string;
+  total_cards: number;
+  correct_count: number;
+  wrong_count: number;
+  accuracy: number;
+  points_earned: number;
+}
+
+export async function listRewards(): Promise<Reward[]> {
+  return request("/rewards");
+}
+
+export async function createReward(payload: {
+  name: string;
+  description?: string;
+  target_points: number;
+}): Promise<Reward> {
+  return request("/rewards", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateReward(
+  id: number,
+  payload: { name?: string; description?: string; target_points?: number }
+): Promise<Reward> {
+  return request(`/rewards/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteReward(id: number): Promise<void> {
+  await request(`/rewards/${id}`, { method: "DELETE" });
+}
+
+export async function getProgress(): Promise<ProgressData> {
+  return request("/progress");
+}
+
+export async function claimReward(id: number): Promise<{
+  claimed_reward: ClaimedReward;
+  reward_name: string;
+  current_points: number;
+}> {
+  return request(`/rewards/${id}/claim`, { method: "POST" });
+}
+
+export async function listSessions(): Promise<PlaySessionItem[]> {
+  return request("/sessions");
+}

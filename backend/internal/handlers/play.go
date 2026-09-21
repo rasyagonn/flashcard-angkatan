@@ -44,19 +44,8 @@ func parseIDs(s string) []uint {
 	return ids
 }
 
-// getOrInitProgress memastikan baris user_progress (id=1) selalu ada.
-func (h *PlayHandler) getOrInitProgress() (*models.UserProgress, error) {
-	var p models.UserProgress
-	err := h.DB.First(&p, "id = ?", 1).Error
-	if err == gorm.ErrRecordNotFound {
-		p = models.UserProgress{ID: 1}
-		if err := h.DB.Create(&p).Error; err != nil {
-			return nil, err
-		}
-		return &p, nil
-	}
-	return &p, err
-}
+// getOrInitProgress dipindah ke progress.go sebagai fungsi paket bersama.
+// lihat: internal/handlers/progress.go
 
 // Round mengambil satu kartu acak + 4 opsi nama (diacak, tanpa penanda jawaban).
 // Query param `exclude` = id kartu yang sudah dimainkan pada sesi ini.
@@ -142,7 +131,7 @@ func (h *PlayHandler) Answer(c *gin.Context) {
 		return
 	}
 
-	progress, err := h.getOrInitProgress()
+	progress, err := getOrInitProgress(h.DB)
 	if err != nil {
 		helpers.Error(c, http.StatusInternalServerError, "gagal membaca poin")
 		return

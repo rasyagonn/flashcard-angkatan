@@ -3,7 +3,7 @@
 > Aplikasi **flashcard** untuk mengingat nama mahasiswa satu angkatan.
 > Kamu melihat foto temanmu → menebak namanya → mengumpulkan poin → merayakan dengan **self-reward**.
 
-**Status:** Fase 2 selesai (Play flashcard + skor); Fase 3 (Rank/reward) berikutnya
+**Status:** Fase 3 selesai (Rank + self-reward + statistik); Fase 4 (Swagger, validasi, polish) berikutnya
 **Dokumen oleh:** Big Pickle · dipersiapkan bersama pemilik proyek
 
 ---
@@ -358,7 +358,7 @@ npm run dev               # → http://localhost:3000
 |------|-----|----------|
 | **Fase 1** ✅ | Setup monorepo, model GORM, koneksi DB, CRUD mahasiswa + upload foto + import CSV | Data mahasiswa bisa dikelola |
 | **Fase 2** ✅ | API play (round/answer/end), skor +2/-1, riwayat sesi | Flashcard bisa dimainkan |
-| **Fase 3** | Reward CRUD, progress UI, klaim & reset poin, statistik | Fitur rank lengkap |
+| **Fase 3** ✅ | Reward CRUD, progress UI, klaim & reset poin, statistik | Fitur rank lengkap |
 | **Fase 4** | Swagger lengkap, error handling, validasi, tes (Go test + coba Postman), polish UI | Siap dipakai harian |
 
 ---
